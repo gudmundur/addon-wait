@@ -32,6 +32,7 @@ func needsRedis() bool {
 
 func pingPostgres() (bool, error) {
 	db, err := sql.Open("postgres", postgresURL())
+	defer db.Close()
 
 	if err != nil {
 		return false, err
@@ -59,6 +60,7 @@ func pingRedis() (bool, error) {
 	}
 
 	client := redis.NewClient(&options)
+	defer client.Close()
 	pong, err := client.Ping().Result()
 	return pong == "PONG", err
 }
