@@ -79,6 +79,8 @@ func waitPostgres() (bool, error) {
 			if ready {
 				return true, nil
 			}
+
+			printTick()
 		}
 	}
 }
@@ -97,26 +99,46 @@ func waitRedis() (bool, error) {
 			if ready {
 				return true, nil
 			}
+
+			printTick()
 		}
 	}
 }
 
+func printWaiting(service string) {
+	fmt.Printf("Waiting for %s to become available...", service)
+}
+
+func printTick() {
+	fmt.Print(".")
+}
+
+func printDone() {
+	fmt.Println(" done")
+}
+
 func main() {
 	if needsPostgres() {
+		printWaiting("PostgresSQL")
 		ready, err := waitPostgres()
 
 		if !ready {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		printDone()
 	}
 
 	if needsRedis() {
+		printWaiting("Redis")
 		ready, err := waitRedis()
 
 		if !ready {
 			fmt.Println(err)
 			os.Exit(1)
 		}
+
+		printDone()
 	}
 }
