@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
 	"gopkg.in/redis.v3"
@@ -13,6 +12,8 @@ import (
 
 const timeoutInterval time.Duration = 5 * time.Minute
 const tickDuration time.Duration = 500 * time.Millisecond
+
+type PingFunc func() (bool, error)
 
 func postgresURL() string {
 	return os.Getenv("DATABASE_URL")
@@ -65,57 +66,57 @@ func pingRedis() (bool, error) {
 	return pong == "PONG", err
 }
 
-func waitPostgres() (bool, error) {
+func waitService(name string, pingFn PingFunc) error {
 	timeout := time.After(timeoutInterval)
 	tick := time.Tick(tickDuration)
+
+	printWaiting(name)
 
 	for {
 		select {
 		case <-timeout:
-			return false, errors.New("Timed out while waiting for Postgres")
+			return fmt.Errorf("Timed out waiting for %s", name)
 		case <-tick:
-			ready, _ := pingPostgres()
-
+			ready, _ := pingFn()
 			if ready {
-				return true, nil
+				printDone()
+				return nil
 			}
+
+			printTick()
 		}
 	}
 }
 
-func waitRedis() (bool, error) {
-	timeout := time.After(timeoutInterval)
-	tick := time.Tick(tickDuration)
+func printWaiting(service string) {
+	fmt.Printf("Waiting for %s to become available...", service)
+}
 
-	for {
-		select {
-		case <-timeout:
-			return false, errors.New("Timed out while waiting for Redis")
-		case <-tick:
-			ready, _ := pingRedis()
+func printTick() {
+	fmt.Print(".")
+}
 
-			if ready {
-				return true, nil
-			}
-		}
-	}
+func printDone() {
+	fmt.Println(" done")
+}
+
+func printTimeout() {
+	fmt.Println(" timed out")
 }
 
 func main() {
 	if needsPostgres() {
-		ready, err := waitPostgres()
-
-		if !ready {
-			fmt.Println(err)
+		err := waitService("PostgresSQL", pingPostgres)
+		if err != nil {
+			printTimeout()
 			os.Exit(1)
 		}
 	}
 
 	if needsRedis() {
-		ready, err := waitRedis()
-
-		if !ready {
-			fmt.Println(err)
+		err := waitService("Redis", pingRedis)
+		if err != nil {
+			printTimeout()
 			os.Exit(1)
 		}
 	}
