@@ -1,3 +1,7 @@
+# DEPRECATED
+This utility is no longer required and is unsupported as its functionality has been built directly into the Heroku [app-setups](https://devcenter.heroku.com/articles/platform-api-reference#app-setup) API.
+
+
 # Addon Wait
 
 This is a utility that will wait on Heroku Postgres and Redis to become available after provisioning. The utility will attempt to connect either addon for up to five minutes before failing. To determine whether Heroku Postgres has become available, it attempts to connect to `DATABASE_URL`. Similarly for Heroku Redis, it attempts to connect to `REDIS_URL`.
